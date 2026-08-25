@@ -1,147 +1,247 @@
-import json
-import os
 from collections import deque
 
-
-def cargar_personajes():
-    ruta = os.path.join(os.path.dirname(__file__), "listapersonajes.json")
-
-    with open(ruta, "r", encoding="utf-8") as archivo:
-        personajes = json.load(archivo)
-
-    return personajes
+from lista import List
+from super_heroes_data import superheroes
 
 
-def guardar_personajes(personajes):
-    ruta = os.path.join(os.path.dirname(__file__), "listapersonajes.json")
+class Personaje:
 
-    with open(ruta, "w", encoding="utf-8") as archivo:
-        json.dump(personajes, archivo, indent=4, ensure_ascii=False)
+    def __init__(
+        self,
+        name,
+        alias,
+        real_name,
+        bio,
+        first_appearance,
+        is_villain
+    ):
+        self.name = name
+        self.alias = alias
+        self.real_name = real_name
+        self.bio = bio
+        self.first_appearance = first_appearance
+        self.is_villain = is_villain
+
+    def __str__(self):
+
+        tipo = "Villano" if self.is_villain else "Héroe"
+
+        return (
+            f"{self.name} | "
+            f"real: {self.real_name} | "
+            f"{self.first_appearance} | "
+            f"{tipo}"
+        )
 
 
-personajes = cargar_personajes()
+def by_name(personaje):
+    return personaje.name
 
-# 1 Ordenar por nombre
-personajes.sort(key=lambda x: x["name"])
 
-print("PERSONAJES ORDENADOS POR NOMBRE\n")
+def by_real_name(personaje):
+    return personaje.real_name or ""
 
-for p in personajes:
-    print(p["name"])
 
-# 2 Posición de The Thing y Rocket Raccoon
-print("\nPOSICIONES\n")
+def by_first_appearance(personaje):
+    return personaje.first_appearance
 
-for i in range(len(personajes)):
 
-    if personajes[i]["name"] == "The Thing":
-        print("The Thing está en la posición", i)
+def separador(titulo):
+    print("\n" + "=" * 70)
+    print(titulo)
+    print("=" * 70)
 
-    if personajes[i]["name"] == "Rocket Raccoon":
-        print("Rocket Raccoon está en la posición", i)
 
-# 3 Villanos
-print("\nVILLANOS\n")
+lista = List()
 
-for p in personajes:
+lista.add_criterion("name", by_name)
+lista.add_criterion("real_name", by_real_name)
+lista.add_criterion(
+    "first_appearance",
+    by_first_appearance
+)
 
-    if p["is_villain"]:
-        print(p["name"])
+for hero in superheroes:
 
-# 4 Cola de villanos anteriores a 1980
-print("\nVILLANOS ANTES DE 1980\n")
+    personaje = Personaje(
+        hero["name"],
+        hero["alias"],
+        hero["real_name"],
+        hero["short_bio"],
+        hero["first_appearance"],
+        hero["is_villain"]
+    )
 
-cola = deque()
+    lista.append(personaje)
 
-for p in personajes:
 
-    if p["is_villain"]:
-        cola.append(p)
 
-while len(cola) > 0:
+if __name__ == "__main__":
 
-    aux = cola.popleft()
+    print(
+        f"Cantidad total de personajes: {lista.size()}"
+    )
 
-    if aux["first_appearance"] < 1980:
-        print(aux["name"], "-", aux["first_appearance"])
+    separador(
+        "1) Listado ordenado ascendente por NOMBRE"
+    )
 
-# 5 Héroes que comienzan con Bl G My W
-print("\nSUPERHEROES Bl G My W\n")
+    lista.sort_by_criterion("name")
+    lista.show()
 
-for p in personajes:
+    separador(
+        "2) Posición de The Thing y Rocket Raccoon"
+    )
 
-    if not p["is_villain"]:
+    posicion_thing = lista.search(
+        "The Thing",
+        "name"
+    )
 
-        if (p["name"].startswith("Bl") or
-                p["name"].startswith("G") or
-                p["name"].startswith("My") or
-                p["name"].startswith("W")):
+    posicion_rocket = lista.search(
+        "Rocket Raccoon",
+        "name"
+    )
 
-            print(p["name"])
+    print(
+        f"The Thing está en la posición: "
+        f"{posicion_thing}"
+    )
 
-# 6 Ordenados por nombre real
-personajes.sort(key=lambda x: x["real_name"] if x["real_name"] is not None else "")
+    print(
+        f"Rocket Raccoon está en la posición: "
+        f"{posicion_rocket}"
+    )
 
-print("\nORDENADOS POR NOMBRE REAL\n")
 
-for p in personajes:
-    print(p["real_name"], "-", p["name"])
+    separador(
+        "3) Listado de todos los villanos"
+    )
 
-# 7 Superhéroes ordenados por fecha
-heroes = []
+    villanos = List()
 
-for p in personajes:
+    for personaje in lista:
 
-    if not p["is_villain"]:
-        heroes.append(p)
+        if personaje.is_villain:
+            villanos.append(personaje)
 
-heroes.sort(key=lambda x: x["first_appearance"])
+    villanos.show()
 
-print("\nSUPERHEROES POR FECHA\n")
+    print(
+        f"\nTotal de villanos: {villanos.size()}"
+    )
 
-for h in heroes:
-    print(h["name"], "-", h["first_appearance"])
+    separador(
+        "4) Villanos que aparecieron antes de 1980"
+    )
 
-# 8 Modificar Ant Man
-print("\nMODIFICAR ANT MAN\n")
+    cola_villanos = deque()
 
-for p in personajes:
+    for villano in villanos:
+        cola_villanos.append(villano)
 
-    if p["name"] == "Ant Man":
+    print("Villanos anteriores a 1980:")
 
-        print("Antes:", p["real_name"])
+    while cola_villanos:
 
-        p["real_name"] = "Scott Lang"
+        villano = cola_villanos.popleft()
 
-        print("Después:", p["real_name"])
+        if villano.first_appearance < 1980:
+            print(villano)
 
-guardar_personajes(personajes)
+    separador(
+        "5) Superhéroes que comienzan con Bl, G, My y W"
+    )
 
-# 9 Buscar time-traveling o suit
-print("\nBIOGRAFIAS\n")
+    lista.filter_start_with(
+        ("Bl", "G", "My", "W")
+    )
 
-for p in personajes:
+    separador(
+        "6) Listado ordenado ascendente por NOMBRE REAL"
+    )
 
-    bio = p["short_bio"].lower()
+    lista.sort_by_criterion("real_name")
+    lista.show()
 
-    if "time-traveling" in bio or "suit" in bio:
-        print(p["name"])
+    separador(
+        "7) Listado ordenado por FECHA DE APARICIÓN"
+    )
 
-# 10 Eliminar Electro y Baron Zemo
-print("\nELIMINAR PERSONAJES\n")
+    lista.sort_by_criterion(
+        "first_appearance"
+    )
 
-for p in personajes[:]:
+    lista.show()
 
-    if p["name"] == "Electro" or p["name"] == "Baron Zemo":
+    separador(
+        "8) Modificar nombre real de Ant Man"
+    )
 
-        print("Nombre:", p["name"])
-        print("Nombre real:", p["real_name"])
-        print("Año:", p["first_appearance"])
-        print("Biografía:", p["short_bio"])
-        print()
+    posicion_ant_man = lista.search(
+        "Ant Man",
+        "name"
+    )
 
-        personajes.remove(p)
+    if posicion_ant_man is not None:
 
-guardar_personajes(personajes)
+        personaje = lista[posicion_ant_man]
 
-print("\nProceso terminado.")
+        print(
+            f"Nombre real ANTES: "
+            f"{personaje.real_name}"
+        )
+
+        personaje.real_name = "Scott Lang"
+
+        print(
+            f"Nombre real DESPUÉS: "
+            f"{personaje.real_name}"
+        )
+
+    else:
+
+        print(
+            "No se encontró 'Ant Man' en la lista."
+        )
+
+    separador(
+        "9) Personajes con 'time-traveling' o 'suit'"
+    )
+
+    lista.filter_contain_on_bio(
+        ["time-traveling", "suit"]
+    )
+
+    separador(
+        "10) Eliminar Electro y Baron Zemo"
+    )
+
+    nombres_a_eliminar = [
+        "Electro",
+        "Baron Zemo"
+    ]
+
+    for nombre in nombres_a_eliminar:
+
+        eliminado = lista.delete_value(
+            nombre,
+            "name"
+        )
+
+        if eliminado is not None:
+
+            print(
+                f"Eliminado -> {eliminado}"
+            )
+
+        else:
+
+            print(
+                f"'{nombre}' no estaba en la lista."
+            )
+
+    print(
+        f"\nCantidad total de personajes "
+        f"después de eliminar: {lista.size()}"
+    )
